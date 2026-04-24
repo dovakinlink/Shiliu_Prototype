@@ -41,9 +41,7 @@ class PatientSummaryCard extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Text(
-                summary.patientName.isNotEmpty
-                    ? summary.patientName[0]
-                    : '?',
+                summary.patientName.isNotEmpty ? summary.patientName[0] : '?',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -87,6 +85,30 @@ class PatientSummaryCard extends StatelessWidget {
                     style: theme.textTheme.bodySmall,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+                  Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: <Widget>[
+                      StatusBadge(
+                        label:
+                            '${summary.diseaseGroupCode} ${summary.crfTemplateVersion}',
+                        tone: StatusTone.pending,
+                      ),
+                      StatusBadge(
+                        label:
+                            'CRF ${(summary.crfCompletionRate * 100).round()}%',
+                        tone: summary.crfCompletionRate >= 0.8
+                            ? StatusTone.success
+                            : StatusTone.warning,
+                      ),
+                      if (summary.crfBlockingMissingCount > 0)
+                        StatusBadge(
+                          label: '缺 ${summary.crfBlockingMissingCount} 项关键',
+                          tone: StatusTone.error,
+                        ),
+                    ],
                   ),
                   if (summary.tags.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 6),

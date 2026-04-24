@@ -7,6 +7,10 @@ class ExtractionDetail {
     required this.confidence,
     this.sourceLocator,
     this.sourceExcerpt,
+    this.templateId,
+    this.fieldCode,
+    this.fieldPath = const <String>[],
+    this.canonicalImpact,
     this.changeType = FieldChangeType.append,
     this.existingValue,
     this.existingFieldId,
@@ -17,6 +21,10 @@ class ExtractionDetail {
   final FieldConfidence confidence;
   final String? sourceLocator;
   final String? sourceExcerpt;
+  final String? templateId;
+  final String? fieldCode;
+  final List<String> fieldPath;
+  final String? canonicalImpact;
   final FieldChangeType changeType;
   final String? existingValue;
   final String? existingFieldId;
@@ -25,6 +33,10 @@ class ExtractionDetail {
     FieldChangeType? changeType,
     String? existingValue,
     String? existingFieldId,
+    String? templateId,
+    String? fieldCode,
+    List<String>? fieldPath,
+    String? canonicalImpact,
   }) {
     return ExtractionDetail(
       fieldName: fieldName,
@@ -32,6 +44,10 @@ class ExtractionDetail {
       confidence: confidence,
       sourceLocator: sourceLocator,
       sourceExcerpt: sourceExcerpt,
+      templateId: templateId ?? this.templateId,
+      fieldCode: fieldCode ?? this.fieldCode,
+      fieldPath: fieldPath ?? this.fieldPath,
+      canonicalImpact: canonicalImpact ?? this.canonicalImpact,
       changeType: changeType ?? this.changeType,
       existingValue: existingValue ?? this.existingValue,
       existingFieldId: existingFieldId ?? this.existingFieldId,

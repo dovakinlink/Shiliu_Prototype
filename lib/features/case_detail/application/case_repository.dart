@@ -11,6 +11,7 @@ abstract interface class CaseRepository {
     required int birthYear,
     required String primarySite,
     required String tumorType,
+    String? diseaseProfileId,
     String? histology,
     String? stage,
   });

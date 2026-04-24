@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../data/mock/mock_crf_templates.dart';
 import '../../data/mock/mock_repositories.dart';
 import '../../features/case_detail/domain/case_models.dart';
 
@@ -23,6 +24,7 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
   String _sex = '男';
   String? _primarySite;
   String? _tumorType;
+  String? _diseaseProfileId;
   String? _histology;
   String? _stage;
   bool _submitting = false;
@@ -97,12 +99,15 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
 
     setState(() => _submitting = true);
     try {
-      final summary = await ref.read(caseRepositoryProvider).createCase(
+      final summary = await ref
+          .read(caseRepositoryProvider)
+          .createCase(
             patientName: _nameController.text.trim(),
             sex: _sex,
             birthYear: int.parse(_birthYearController.text.trim()),
             primarySite: _primarySite!,
             tumorType: _tumorType!,
+            diseaseProfileId: _diseaseProfileId,
             histology: _histology,
             stage: _stage,
           );
@@ -139,8 +144,7 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.outline.withAlpha(80),
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusFull),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                   ),
                 ),
               ),
@@ -152,27 +156,29 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
                     height: 36,
                     decoration: BoxDecoration(
                       color: AppPalette.primary.withAlpha(25),
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusSm),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.person_add_alt_1_rounded,
-                        size: 18, color: AppPalette.primary),
+                    child: const Icon(
+                      Icons.person_add_alt_1_rounded,
+                      size: 18,
+                      color: AppPalette.primary,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Text('新建病例', style: theme.textTheme.titleLarge),
                 ],
               ),
               const SizedBox(height: AppSpacing.xs),
-              Text(
-                '录入患者基本信息以创建病例档案',
-                style: theme.textTheme.bodySmall,
-              ),
+              Text('录入患者基本信息以创建病例档案', style: theme.textTheme.bodySmall),
               const SizedBox(height: AppSpacing.xxl),
 
-              Text('患者信息',
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(color: AppPalette.primary)),
+              Text(
+                '患者信息',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppPalette.primary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
 
               TextFormField(
@@ -195,12 +201,12 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
                       initialValue: _sex,
                       decoration: const InputDecoration(
                         labelText: '性别',
-                        prefixIcon:
-                            Icon(Icons.wc_rounded, size: 20),
+                        prefixIcon: Icon(Icons.wc_rounded, size: 20),
                       ),
                       items: const <String>['男', '女']
-                          .map((s) => DropdownMenuItem(
-                              value: s, child: Text(s)))
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
                           .toList(growable: false),
                       onChanged: (value) =>
                           setState(() => _sex = value ?? _sex),
@@ -233,21 +239,22 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
               ),
 
               const SizedBox(height: AppSpacing.xxl),
-              Text('疾病信息',
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(color: AppPalette.primary)),
+              Text(
+                '疾病信息',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppPalette.primary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
 
               DropdownButtonFormField<String>(
                 initialValue: _primarySite,
                 decoration: const InputDecoration(
                   labelText: '原发部位',
-                  prefixIcon:
-                      Icon(Icons.location_on_outlined, size: 20),
+                  prefixIcon: Icon(Icons.location_on_outlined, size: 20),
                 ),
                 items: _primarySites
-                    .map((s) =>
-                        DropdownMenuItem(value: s, child: Text(s)))
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                     .toList(growable: false),
                 validator: (value) => value == null ? '请选择原发部位' : null,
                 onChanged: (value) {
@@ -255,6 +262,12 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
                     _primarySite = value;
                     _tumorType = null;
                     _histology = null;
+                    if (value != null) {
+                      _diseaseProfileId = inferDiseaseProfile(
+                        primarySite: value,
+                        tumorType: '',
+                      ).id;
+                    }
                   });
                 },
               ),
@@ -264,16 +277,42 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
                 initialValue: _tumorType,
                 decoration: const InputDecoration(
                   labelText: '瘤种/诊断',
-                  prefixIcon:
-                      Icon(Icons.biotech_outlined, size: 20),
+                  prefixIcon: Icon(Icons.biotech_outlined, size: 20),
                 ),
                 items: _availableTumorTypes
-                    .map((s) =>
-                        DropdownMenuItem(value: s, child: Text(s)))
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                     .toList(growable: false),
                 validator: (value) => value == null ? '请选择瘤种' : null,
-                onChanged: (value) =>
-                    setState(() => _tumorType = value),
+                onChanged: (value) => setState(() {
+                  _tumorType = value;
+                  if (_primarySite != null && value != null) {
+                    _diseaseProfileId = inferDiseaseProfile(
+                      primarySite: _primarySite!,
+                      tumorType: value,
+                    ).id;
+                  }
+                }),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              DropdownButtonFormField<String>(
+                initialValue: _diseaseProfileId,
+                decoration: const InputDecoration(
+                  labelText: '瘤种包 / CRF 模板',
+                  prefixIcon: Icon(Icons.account_tree_outlined, size: 20),
+                ),
+                items: enabledMockDiseaseProfiles
+                    .map(
+                      (profile) => DropdownMenuItem(
+                        value: profile.id,
+                        child: Text(
+                          '${profile.groupCode} · ${profile.tumorName} · ${mockTemplateForProfile(profile.id).version}',
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+                validator: (value) => value == null ? '请选择瘤种包' : null,
+                onChanged: (value) => setState(() => _diseaseProfileId = value),
               ),
               const SizedBox(height: AppSpacing.lg),
 
@@ -284,8 +323,7 @@ class _CreateCaseSheetState extends ConsumerState<CreateCaseSheet> {
                   prefixIcon: Icon(Icons.assessment_outlined, size: 20),
                 ),
                 items: _stages
-                    .map((s) =>
-                        DropdownMenuItem(value: s, child: Text(s)))
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                     .toList(growable: false),
                 onChanged: (value) => setState(() => _stage = value),
               ),

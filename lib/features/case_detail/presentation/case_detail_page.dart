@@ -9,22 +9,23 @@ import '../../../data/mock/mock_app_store.dart';
 import '../../../data/mock/mock_repositories.dart';
 import '../../../shared/widgets/app_states.dart';
 import '../../../shared/widgets/collapsible_section.dart';
+import '../../../shared/widgets/evidence_card.dart';
 import '../../../shared/widgets/patient_summary_card.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/timeline_event_tile.dart';
+import '../../crf/presentation/crf_widgets.dart';
 import '../domain/case_models.dart';
 
-final caseDetailProvider =
-    FutureProvider.family<CaseDetail?, String>((ref, caseId) async {
+final caseDetailProvider = FutureProvider.family<CaseDetail?, String>((
+  ref,
+  caseId,
+) async {
   ref.watch(mockAppStoreProvider);
   return ref.read(caseRepositoryProvider).getCaseDetail(caseId);
 });
 
 class CaseDetailPage extends ConsumerStatefulWidget {
-  const CaseDetailPage({
-    required this.caseId,
-    super.key,
-  });
+  const CaseDetailPage({required this.caseId, super.key});
 
   final String caseId;
 
@@ -42,146 +43,163 @@ class _CaseDetailPageState extends ConsumerState<CaseDetailPage> {
     final detailAsync = ref.watch(caseDetailProvider(widget.caseId));
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('病例详情'),
-        actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: TextButton.icon(
-              onPressed: () => context.push('/screening/${widget.caseId}'),
-              icon: const Icon(Icons.fact_check_outlined, size: 18),
-              label: const Text('筛查快照'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppPalette.primary,
-                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: detailAsync.when(
-        data: (detail) {
-          if (detail == null) {
-            return const Padding(
-              padding: EdgeInsets.all(AppSpacing.page),
-              child: AppEmptyState(
-                icon: Icons.folder_off_outlined,
-                title: '病例不存在',
-                description: '当前 mock 数据中没有找到对应病例',
-              ),
-            );
-          }
-          selectedEventId ??= detail.timeline.isNotEmpty ? detail.timeline.first.id : null;
-          final isDark = theme.brightness == Brightness.dark;
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.page,
-              AppSpacing.sm,
-              AppSpacing.page,
-              AppSpacing.xxxxl,
-            ),
-            children: <Widget>[
-              PatientSummaryCard(summary: detail.summary),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ===== Section 1: Overview =====
-              _OverviewCard(detail: detail),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // ===== Section 2: Diagnosis & Staging =====
-              _DiagnosisStagingSection(detail: detail),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // ===== Section 3: Molecular & Biomarkers =====
-              _MolecularBiomarkerSection(detail: detail),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // ===== Section 4: Treatment Lines =====
-              _TreatmentSection(detail: detail),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // ===== Section 5: Lab Results =====
-              _LabResultsSection(detail: detail),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // ===== Section 6: Imaging & Response =====
-              _ImagingSection(detail: detail),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // ===== Section 7: Adverse Events =====
-              _AdverseEventsSection(detail: detail),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // ===== Section 8: Vitals & Infection =====
-              _VitalsInfectionSection(detail: detail),
-
-              // ===== Divider =====
-              const SizedBox(height: AppSpacing.sectionGap),
-              const Divider(),
-              const SizedBox(height: AppSpacing.sectionGap),
-
-              // ===== Timeline (compact + inline expand) =====
-              Text('纵向时间线', style: theme.textTheme.titleLarge),
-              const SizedBox(height: AppSpacing.md),
-              if (detail.timeline.isEmpty)
-                const AppEmptyState(
-                  title: '暂无时间线',
-                  description: '上传资料后自动生成',
-                )
-              else
-                ...detail.timeline.asMap().entries.map(
-                  (entry) {
-                    final index = entry.key;
-                    final event = entry.value;
-                    final isSelected = selectedEventId == event.id;
-
-                    return TimelineEventTile(
-                      event: event,
-                      selected: isSelected,
-                      isFirst: index == 0,
-                      isLast: index == detail.timeline.length - 1,
-                      onTap: () {
-                        setState(() {
-                          selectedEventId = event.id;
-                          selectedFieldId = null;
-                          selectedEvidenceId = null;
-                        });
-                      },
-                      expandedContent: isSelected
-                          ? _buildInlineContent(
-                              detail: detail,
-                              eventId: event.id,
-                              theme: theme,
-                              isDark: isDark,
-                            )
-                          : null,
-                    );
-                  },
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('病例详情'),
+          actions: <Widget>[
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: TextButton.icon(
+                onPressed: () => context.push('/screening/${widget.caseId}'),
+                icon: const Icon(Icons.fact_check_outlined, size: 18),
+                label: const Text('筛查快照'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppPalette.primary,
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
+                  visualDensity: VisualDensity.compact,
                 ),
+              ),
+            ),
+          ],
+          bottom: const TabBar(
+            isScrollable: true,
+            tabs: <Widget>[
+              Tab(text: '概览'),
+              Tab(text: '时间线'),
+              Tab(text: '专病 CRF'),
+              Tab(text: '证据与原文'),
             ],
-          );
-        },
-        error: (error, _) => Padding(
-          padding: const EdgeInsets.all(AppSpacing.page),
-          child: AppErrorState(message: '$error'),
+          ),
         ),
-        loading: () => const Padding(
-          padding: EdgeInsets.all(AppSpacing.page),
-          child: SkeletonBlock(height: 180),
+        body: detailAsync.when(
+          data: (detail) {
+            if (detail == null) {
+              return const Padding(
+                padding: EdgeInsets.all(AppSpacing.page),
+                child: AppEmptyState(
+                  icon: Icons.folder_off_outlined,
+                  title: '病例不存在',
+                  description: '当前 mock 数据中没有找到对应病例',
+                ),
+              );
+            }
+            selectedEventId ??= detail.timeline.isNotEmpty
+                ? detail.timeline.first.id
+                : null;
+            final isDark = theme.brightness == Brightness.dark;
+
+            return TabBarView(
+              children: <Widget>[
+                _buildOverviewTab(detail),
+                _buildTimelineTab(detail: detail, theme: theme, isDark: isDark),
+                CrfSectionList(detail: detail),
+                _EvidenceDocumentsTab(detail: detail),
+              ],
+            );
+          },
+          error: (error, _) => Padding(
+            padding: const EdgeInsets.all(AppSpacing.page),
+            child: AppErrorState(message: '$error'),
+          ),
+          loading: () => const Padding(
+            padding: EdgeInsets.all(AppSpacing.page),
+            child: SkeletonBlock(height: 180),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildOverviewTab(CaseDetail detail) {
+    final tabController = DefaultTabController.maybeOf(context);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.page,
+        AppSpacing.sm,
+        AppSpacing.page,
+        AppSpacing.xxxxl,
+      ),
+      children: <Widget>[
+        PatientSummaryCard(summary: detail.summary),
+        const SizedBox(height: AppSpacing.lg),
+        CrfTemplateSummaryCard(
+          detail: detail,
+          onViewCrf: () => tabController?.animateTo(2),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _OverviewCard(detail: detail),
+        const SizedBox(height: AppSpacing.sm),
+        _DiagnosisStagingSection(detail: detail),
+        const SizedBox(height: AppSpacing.sm),
+        _MolecularBiomarkerSection(detail: detail),
+        const SizedBox(height: AppSpacing.sm),
+        _TreatmentSection(detail: detail),
+        const SizedBox(height: AppSpacing.sm),
+        _LabResultsSection(detail: detail),
+        const SizedBox(height: AppSpacing.sm),
+        _ImagingSection(detail: detail),
+        const SizedBox(height: AppSpacing.sm),
+        _AdverseEventsSection(detail: detail),
+        const SizedBox(height: AppSpacing.sm),
+        _VitalsInfectionSection(detail: detail),
+      ],
+    );
+  }
+
+  Widget _buildTimelineTab({
+    required CaseDetail detail,
+    required ThemeData theme,
+    required bool isDark,
+  }) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.page,
+        AppSpacing.sm,
+        AppSpacing.page,
+        AppSpacing.xxxxl,
+      ),
+      children: <Widget>[
+        Text('纵向时间线', style: theme.textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.md),
+        if (detail.timeline.isEmpty)
+          const AppEmptyState(title: '暂无时间线', description: '上传资料后自动生成')
+        else
+          ...detail.timeline.asMap().entries.map((entry) {
+            final index = entry.key;
+            final event = entry.value;
+            final isSelected = selectedEventId == event.id;
+
+            return TimelineEventTile(
+              event: event,
+              selected: isSelected,
+              isFirst: index == 0,
+              isLast: index == detail.timeline.length - 1,
+              onTap: () {
+                setState(() {
+                  selectedEventId = event.id;
+                  selectedFieldId = null;
+                  selectedEvidenceId = null;
+                });
+              },
+              expandedContent: isSelected
+                  ? _buildInlineContent(
+                      detail: detail,
+                      eventId: event.id,
+                      theme: theme,
+                      isDark: isDark,
+                    )
+                  : null,
+            );
+          }),
+      ],
     );
   }
 
@@ -258,6 +276,55 @@ class _CaseDetailPageState extends ConsumerState<CaseDetailPage> {
   }
 }
 
+class _EvidenceDocumentsTab extends StatefulWidget {
+  const _EvidenceDocumentsTab({required this.detail});
+
+  final CaseDetail detail;
+
+  @override
+  State<_EvidenceDocumentsTab> createState() => _EvidenceDocumentsTabState();
+}
+
+class _EvidenceDocumentsTabState extends State<_EvidenceDocumentsTab> {
+  String? _selectedEvidenceId;
+
+  @override
+  Widget build(BuildContext context) {
+    final documents = widget.detail.evidenceDocuments;
+
+    if (documents.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.page),
+        child: AppEmptyState(
+          icon: Icons.source_outlined,
+          title: '暂无证据原文',
+          description: '上传资料后会在这里展示原文定位和命中的字段数',
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.page,
+        AppSpacing.sm,
+        AppSpacing.page,
+        AppSpacing.xxxxl,
+      ),
+      children: <Widget>[
+        for (final document in documents)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: EvidenceCard(
+              document: document,
+              highlighted: _selectedEvidenceId == document.id,
+              onTap: () => setState(() => _selectedEvidenceId = document.id),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 // ==========================================================================
 // Section 1: Overview (enhanced)
 // ==========================================================================
@@ -286,10 +353,30 @@ class _OverviewCard extends StatelessWidget {
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
                 children: <Widget>[
-                  _FactTile(label: '性别/出生年', value: '${detail.sex} / ${detail.birthYear}', width: tileWidth, isDark: isDark),
-                  _FactTile(label: '确诊日期', value: detail.diagnosisDate, width: tileWidth, isDark: isDark),
-                  _FactTile(label: '疾病状态', value: detail.diseaseStatus, width: tileWidth, isDark: isDark),
-                  _FactTile(label: '转移部位', value: detail.metastaticSites, width: tileWidth, isDark: isDark),
+                  _FactTile(
+                    label: '性别/出生年',
+                    value: '${detail.sex} / ${detail.birthYear}',
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
+                  _FactTile(
+                    label: '确诊日期',
+                    value: detail.diagnosisDate,
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
+                  _FactTile(
+                    label: '疾病状态',
+                    value: detail.diseaseStatus,
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
+                  _FactTile(
+                    label: '转移部位',
+                    value: detail.metastaticSites,
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
                 ],
               );
             },
@@ -309,10 +396,16 @@ class _OverviewCard extends StatelessWidget {
                   children: <Widget>[
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Icon(Icons.warning_amber_rounded, size: 15, color: AppPalette.warning),
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        size: 15,
+                        color: AppPalette.warning,
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    Expanded(child: Text(item, style: theme.textTheme.bodyMedium)),
+                    Expanded(
+                      child: Text(item, style: theme.textTheme.bodyMedium),
+                    ),
                   ],
                 ),
               ),
@@ -353,15 +446,39 @@ class _DiagnosisStagingSection extends StatelessWidget {
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
                 children: <Widget>[
-                  _FactTile(label: '原发部位编码', value: dx.primarySiteCode.isNotEmpty ? dx.primarySiteCode : '-', width: tileWidth, isDark: isDark),
-                  _FactTile(label: 'ICD-10', value: dx.icd10Code.isNotEmpty ? dx.icd10Code : '-', width: tileWidth, isDark: isDark),
-                  _FactTile(label: '分期体系', value: dx.stageSystem.isNotEmpty ? dx.stageSystem : '-', width: tileWidth, isDark: isDark),
-                  _FactTile(label: 'AJCC 分期', value: dx.ajccStage.isNotEmpty ? dx.ajccStage : '-', width: tileWidth, isDark: isDark),
+                  _FactTile(
+                    label: '原发部位编码',
+                    value: dx.primarySiteCode.isNotEmpty
+                        ? dx.primarySiteCode
+                        : '-',
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
+                  _FactTile(
+                    label: 'ICD-10',
+                    value: dx.icd10Code.isNotEmpty ? dx.icd10Code : '-',
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
+                  _FactTile(
+                    label: '分期体系',
+                    value: dx.stageSystem.isNotEmpty ? dx.stageSystem : '-',
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
+                  _FactTile(
+                    label: 'AJCC 分期',
+                    value: dx.ajccStage.isNotEmpty ? dx.ajccStage : '-',
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
                 ],
               );
             },
           ),
-          if (dx.tnmT.isNotEmpty || dx.tnmN.isNotEmpty || dx.tnmM.isNotEmpty) ...[
+          if (dx.tnmT.isNotEmpty ||
+              dx.tnmN.isNotEmpty ||
+              dx.tnmM.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             Row(
               children: <Widget>[
@@ -393,7 +510,10 @@ class _TnmChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: AppPalette.primarySurface.withAlpha(180),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -402,7 +522,10 @@ class _TnmChip extends StatelessWidget {
         text: TextSpan(
           style: theme.textTheme.bodyMedium,
           children: <TextSpan>[
-            TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w600)),
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             TextSpan(text: value.isNotEmpty ? value : '-'),
           ],
         ),
@@ -431,7 +554,10 @@ class _MolecularBiomarkerSection extends StatelessWidget {
       icon: Icons.science_outlined,
       initiallyExpanded: true,
       trailing: hasMolecular
-          ? StatusBadge(label: '${detail.molecularResults.length} 项基因', tone: StatusTone.pending)
+          ? StatusBadge(
+              label: '${detail.molecularResults.length} 项基因',
+              tone: StatusTone.pending,
+            )
           : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,7 +567,8 @@ class _MolecularBiomarkerSection extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             ...detail.molecularResults.map((m) => _MolecularRow(result: m)),
           ],
-          if (hasMolecular && hasBiomarker) const SizedBox(height: AppSpacing.lg),
+          if (hasMolecular && hasBiomarker)
+            const SizedBox(height: AppSpacing.lg),
           if (hasBiomarker) ...[
             Text('生物标志物', style: theme.textTheme.labelSmall),
             const SizedBox(height: AppSpacing.sm),
@@ -510,7 +637,10 @@ class _BiomarkerChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -553,7 +683,9 @@ class _TreatmentSection extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: detail.treatmentLines.map((line) => _TreatmentLineCard(line: line)).toList(growable: false),
+        children: detail.treatmentLines
+            .map((line) => _TreatmentLineCard(line: line))
+            .toList(growable: false),
       ),
     );
   }
@@ -573,7 +705,9 @@ class _TreatmentLineCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? AppPalette.primary.withAlpha(12) : AppPalette.primarySurface.withAlpha(120),
+        color: isDark
+            ? AppPalette.primary.withAlpha(12)
+            : AppPalette.primarySurface.withAlpha(120),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Column(
@@ -584,7 +718,10 @@ class _TreatmentLineCard extends StatelessWidget {
               StatusBadge(label: '${line.lineNo}L', tone: StatusTone.pending),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Text(line.regimenName, style: theme.textTheme.titleSmall),
+                child: Text(
+                  line.regimenName,
+                  style: theme.textTheme.titleSmall,
+                ),
               ),
             ],
           ),
@@ -599,12 +736,17 @@ class _TreatmentLineCard extends StatelessWidget {
               spacing: AppSpacing.xs,
               runSpacing: AppSpacing.xs,
               children: line.drugs
-                  .map((d) => Chip(
-                        label: Text(d.drugGeneric, style: const TextStyle(fontSize: 11)),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                      ))
+                  .map(
+                    (d) => Chip(
+                      label: Text(
+                        d.drugGeneric,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                    ),
+                  )
                   .toList(growable: false),
             ),
           ],
@@ -648,7 +790,9 @@ class _LabResultsSection extends StatelessWidget {
           : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: detail.labPanels.map((panel) => _LabPanelCard(panel: panel)).toList(growable: false),
+        children: detail.labPanels
+            .map((panel) => _LabPanelCard(panel: panel))
+            .toList(growable: false),
       ),
     );
   }
@@ -667,8 +811,14 @@ class _LabPanelCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm, top: AppSpacing.xs),
-          child: Text('采样日期: ${panel.collectionDate}', style: theme.textTheme.labelSmall),
+          padding: const EdgeInsets.only(
+            bottom: AppSpacing.sm,
+            top: AppSpacing.xs,
+          ),
+          child: Text(
+            '采样日期: ${panel.collectionDate}',
+            style: theme.textTheme.labelSmall,
+          ),
         ),
         Table(
           columnWidths: const <int, TableColumnWidth>{
@@ -709,9 +859,12 @@ class _LabPanelCard extends StatelessWidget {
     return TableRow(
       children: <Widget>[
         _TableCell(
-          Text(r.testName, style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: isAbn ? FontWeight.w600 : null,
-          )),
+          Text(
+            r.testName,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: isAbn ? FontWeight.w600 : null,
+            ),
+          ),
         ),
         _TableCell(
           Text(
@@ -728,7 +881,8 @@ class _LabPanelCard extends StatelessWidget {
     );
   }
 
-  String _num(double v) => v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);
+  String _num(double v) =>
+      v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);
 }
 
 class _TableHeader extends StatelessWidget {
@@ -738,7 +892,10 @@ class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.xs,
+        horizontal: AppSpacing.xs,
+      ),
       child: Text(text, style: Theme.of(context).textTheme.labelSmall),
     );
   }
@@ -751,7 +908,10 @@ class _TableCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.xs,
+        horizontal: AppSpacing.xs,
+      ),
       child: child,
     );
   }
@@ -783,37 +943,41 @@ class _ImagingSection extends StatelessWidget {
       icon: Icons.image_search_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: detail.imagingRecords.map((rec) {
-          final isDark = theme.brightness == Brightness.dark;
-          return Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: isDark ? AppPalette.primary.withAlpha(12) : AppPalette.primarySurface.withAlpha(120),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
+        children: detail.imagingRecords
+            .map((rec) {
+              final isDark = theme.brightness == Brightness.dark;
+              return Container(
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppPalette.primary.withAlpha(12)
+                      : AppPalette.primarySurface.withAlpha(120),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    StatusBadge(label: rec.studyType),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(rec.date, style: theme.textTheme.bodySmall),
-                    const Spacer(),
-                    if (rec.response != null)
-                      StatusBadge(
-                        label: 'RECIST: ${rec.response}',
-                        tone: _responseTone(rec.response!),
-                      ),
+                    Row(
+                      children: <Widget>[
+                        StatusBadge(label: rec.studyType),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(rec.date, style: theme.textTheme.bodySmall),
+                        const Spacer(),
+                        if (rec.response != null)
+                          StatusBadge(
+                            label: 'RECIST: ${rec.response}',
+                            tone: _responseTone(rec.response!),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(rec.impression, style: theme.textTheme.bodyMedium),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(rec.impression, style: theme.textTheme.bodyMedium),
-              ],
-            ),
-          );
-        }).toList(growable: false),
+              );
+            })
+            .toList(growable: false),
       ),
     );
   }
@@ -851,37 +1015,49 @@ class _AdverseEventsSection extends StatelessWidget {
     return CollapsibleSection(
       title: '不良事件',
       icon: Icons.report_problem_outlined,
-      trailing: StatusBadge(label: '${detail.adverseEvents.length} 项', tone: StatusTone.warning),
+      trailing: StatusBadge(
+        label: '${detail.adverseEvents.length} 项',
+        tone: StatusTone.warning,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: detail.adverseEvents.map((ae) {
-          final gradeColor = ae.grade >= 3 ? AppPalette.error : ae.grade == 2 ? AppPalette.warning : null;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(ae.aeTerm, style: theme.textTheme.titleSmall),
-                      Text('${ae.startDate} · ${ae.attribution}', style: theme.textTheme.bodySmall),
-                    ],
-                  ),
-                ),
-                StatusBadge(
-                  label: 'Grade ${ae.grade}',
-                  tone: gradeColor == AppPalette.error
-                      ? StatusTone.error
-                      : gradeColor == AppPalette.warning
+        children: detail.adverseEvents
+            .map((ae) {
+              final gradeColor = ae.grade >= 3
+                  ? AppPalette.error
+                  : ae.grade == 2
+                  ? AppPalette.warning
+                  : null;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(ae.aeTerm, style: theme.textTheme.titleSmall),
+                          Text(
+                            '${ae.startDate} · ${ae.attribution}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    StatusBadge(
+                      label: 'Grade ${ae.grade}',
+                      tone: gradeColor == AppPalette.error
+                          ? StatusTone.error
+                          : gradeColor == AppPalette.warning
                           ? StatusTone.warning
                           : StatusTone.success,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        }).toList(growable: false),
+              );
+            })
+            .toList(growable: false),
       ),
     );
   }
@@ -915,8 +1091,18 @@ class _VitalsInfectionSection extends StatelessWidget {
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
                 children: <Widget>[
-                  _FactTile(label: 'ECOG 评分', value: '${vs.ecog}', width: tileWidth, isDark: isDark),
-                  _FactTile(label: '体重', value: vs.weight != null ? '${vs.weight} kg' : '-', width: tileWidth, isDark: isDark),
+                  _FactTile(
+                    label: 'ECOG 评分',
+                    value: '${vs.ecog}',
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
+                  _FactTile(
+                    label: '体重',
+                    value: vs.weight != null ? '${vs.weight} kg' : '-',
+                    width: tileWidth,
+                    isDark: isDark,
+                  ),
                 ],
               );
             },
@@ -925,7 +1111,11 @@ class _VitalsInfectionSection extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Row(
               children: <Widget>[
-                Icon(Icons.shield_outlined, size: 16, color: AppPalette.warning),
+                Icon(
+                  Icons.shield_outlined,
+                  size: 16,
+                  color: AppPalette.warning,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -969,8 +1159,8 @@ class _FactTile extends StatelessWidget {
     final bgColor = isPending
         ? AppPalette.error.withAlpha(isDark ? 25 : 18)
         : isDark
-            ? AppPalette.primary.withAlpha(12)
-            : AppPalette.primarySurface.withAlpha(150);
+        ? AppPalette.primary.withAlpha(12)
+        : AppPalette.primarySurface.withAlpha(150);
 
     return SizedBox(
       width: width,
@@ -979,7 +1169,9 @@ class _FactTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          border: isPending ? Border.all(color: AppPalette.error.withAlpha(60)) : null,
+          border: isPending
+              ? Border.all(color: AppPalette.error.withAlpha(60))
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1124,12 +1316,13 @@ class _CompactEvidenceRow extends StatelessWidget {
     );
   }
 
-  static IconData _modalityIcon(DocumentModality modality) => switch (modality) {
-    DocumentModality.image => Icons.image_outlined,
-    DocumentModality.pdf => Icons.description_outlined,
-    DocumentModality.audio => Icons.mic_outlined,
-    DocumentModality.text => Icons.article_outlined,
-  };
+  static IconData _modalityIcon(DocumentModality modality) =>
+      switch (modality) {
+        DocumentModality.image => Icons.image_outlined,
+        DocumentModality.pdf => Icons.description_outlined,
+        DocumentModality.audio => Icons.mic_outlined,
+        DocumentModality.text => Icons.article_outlined,
+      };
 }
 
 extension on List<String> {

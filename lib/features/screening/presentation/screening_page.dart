@@ -14,21 +14,19 @@ import '../domain/screening_models.dart';
 
 final screeningSnapshotProvider =
     FutureProvider.family<ScreeningSnapshot?, String>((ref, caseId) async {
-  ref.watch(mockAppStoreProvider);
-  return ref.read(screeningRepositoryProvider).getSnapshot(caseId);
-});
+      ref.watch(mockAppStoreProvider);
+      return ref.read(screeningRepositoryProvider).getSnapshot(caseId);
+    });
 
-final screeningCaseSummaryProvider =
-    FutureProvider.family<CaseDetail?, String>((ref, caseId) async {
-  ref.watch(mockAppStoreProvider);
-  return ref.read(caseRepositoryProvider).getCaseDetail(caseId);
-});
+final screeningCaseSummaryProvider = FutureProvider.family<CaseDetail?, String>(
+  (ref, caseId) async {
+    ref.watch(mockAppStoreProvider);
+    return ref.read(caseRepositoryProvider).getCaseDetail(caseId);
+  },
+);
 
 class ScreeningPage extends ConsumerStatefulWidget {
-  const ScreeningPage({
-    required this.caseId,
-    super.key,
-  });
+  const ScreeningPage({required this.caseId, super.key});
 
   final String caseId;
 
@@ -91,6 +89,8 @@ class _ScreeningPageState extends ConsumerState<ScreeningPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   _SnapshotHeader(snapshot: snapshot),
+                  const SizedBox(height: AppSpacing.lg),
+                  _CompletenessOverview(snapshot: snapshot),
                   const SizedBox(height: AppSpacing.lg),
                   _StatusBars(snapshot: snapshot),
                   if (snapshot.tasks.isNotEmpty) ...<Widget>[
@@ -181,8 +181,10 @@ class _PatientHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(detail.summary.patientName,
-                  style: theme.textTheme.titleMedium),
+              Text(
+                detail.summary.patientName,
+                style: theme.textTheme.titleMedium,
+              ),
               Text(
                 '${detail.summary.patientCode} · ${detail.summary.tumorType}',
                 style: theme.textTheme.bodySmall,
@@ -213,8 +215,10 @@ class _SnapshotHeader extends StatelessWidget {
         Row(
           children: <Widget>[
             Expanded(
-              child: Text(snapshot.projectTitle,
-                  style: theme.textTheme.titleMedium),
+              child: Text(
+                snapshot.projectTitle,
+                style: theme.textTheme.titleMedium,
+              ),
             ),
             StatusBadge(
               label: snapshot.status.label,
@@ -235,6 +239,106 @@ class _SnapshotHeader extends StatelessWidget {
               .toList(growable: false),
         ),
       ],
+    );
+  }
+}
+
+class _CompletenessOverview extends StatelessWidget {
+  const _CompletenessOverview({required this.snapshot});
+
+  final ScreeningSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: _CompletionTile(
+            label: '通用核心',
+            value: snapshot.coreCompletionRate,
+            icon: Icons.schema_outlined,
+            color: AppPalette.primary,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: _CompletionTile(
+            label: snapshot.crfTemplateLabel ?? '专病 CRF',
+            value: snapshot.crfCompletionRate,
+            icon: Icons.account_tree_outlined,
+            color: AppPalette.pending,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CompletionTile extends StatelessWidget {
+  const _CompletionTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final double value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppPalette.surfaceVariantDark
+            : AppPalette.surfaceVariantLight,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '${(value * 100).round()}%',
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+            child: LinearProgressIndicator(
+              value: value.clamp(0, 1).toDouble(),
+              minHeight: 4,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+              backgroundColor: isDark
+                  ? AppPalette.borderDark
+                  : AppPalette.borderLight,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -275,8 +379,7 @@ class _StatusBars extends StatelessWidget {
             tone: StatusTone.error,
             isDark: isDark,
           ),
-        if (hasBlocking && hasReminder)
-          const SizedBox(height: AppSpacing.sm),
+        if (hasBlocking && hasReminder) const SizedBox(height: AppSpacing.sm),
         if (hasReminder)
           _ColorBar(
             icon: Icons.notifications_none_rounded,
@@ -374,8 +477,7 @@ class _TasksSection extends StatelessWidget {
             children: <Widget>[
               for (int i = 0; i < tasks.length; i++) ...<Widget>[
                 _CompactTaskTile(task: tasks[i]),
-                if (i < tasks.length - 1)
-                  const Divider(height: 1, indent: 44),
+                if (i < tasks.length - 1) const Divider(height: 1, indent: 44),
               ],
             ],
           ),
@@ -397,8 +499,8 @@ class _CompactTaskTile extends StatelessWidget {
     final accentColor = task.isBlocking
         ? AppPalette.error
         : isConflict
-            ? AppPalette.conflict
-            : AppPalette.warning;
+        ? AppPalette.conflict
+        : AppPalette.warning;
 
     return InkWell(
       onTap: () => context.push('/task/${task.id}'),
@@ -517,6 +619,12 @@ String _hintOf(String field) {
     '关键分子标志物' => '例如：PD-L1 TPS 70%',
     '转移部位' => '例如：肝、腹膜',
     '病理类型' => '例如：肺腺癌',
+    '尿路梗阻程度' => '例如：无、轻度、中度、重度',
+    'pT' => '例如：pT2',
+    'pN' => '例如：pN0',
+    'pM' => '例如：pM0',
+    'PD-L1' => '例如：高表达',
+    'CPS得分' => '例如：18',
     _ => '请输入$field',
   };
 }

@@ -11,8 +11,10 @@ import '../../../shared/widgets/app_states.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../domain/upload_job.dart';
 
-final _uploadJobProvider =
-    FutureProvider.family<UploadJob?, String>((ref, jobId) async {
+final _uploadJobProvider = FutureProvider.family<UploadJob?, String>((
+  ref,
+  jobId,
+) async {
   ref.watch(mockAppStoreProvider);
   final jobs = await ref.read(uploadRepositoryProvider).getJobs();
   return jobs.where((j) => j.id == jobId).cast<UploadJob?>().firstOrNull;
@@ -72,22 +74,32 @@ class _UploadReviewPageState extends ConsumerState<UploadReviewPage> {
   ) {
     final details = job.extractionDetails;
 
-    final conflictFields =
-        details.where((d) => d.changeType == FieldChangeType.conflict).toList();
-    final updateFields =
-        details.where((d) => d.changeType == FieldChangeType.update).toList();
-    final fillFields =
-        details.where((d) => d.changeType == FieldChangeType.fill).toList();
-    final appendFields =
-        details.where((d) => d.changeType == FieldChangeType.append).toList();
-    final unchangedFields =
-        details.where((d) => d.changeType == FieldChangeType.unchanged).toList();
+    final conflictFields = details
+        .where((d) => d.changeType == FieldChangeType.conflict)
+        .toList();
+    final updateFields = details
+        .where((d) => d.changeType == FieldChangeType.update)
+        .toList();
+    final fillFields = details
+        .where((d) => d.changeType == FieldChangeType.fill)
+        .toList();
+    final appendFields = details
+        .where((d) => d.changeType == FieldChangeType.append)
+        .toList();
+    final unchangedFields = details
+        .where((d) => d.changeType == FieldChangeType.unchanged)
+        .toList();
 
     for (final d in unchangedFields) {
       _decisions.putIfAbsent(d.fieldName, () => FieldReviewDecision.acceptNew);
     }
 
-    final actionableFields = [...conflictFields, ...updateFields, ...fillFields, ...appendFields];
+    final actionableFields = [
+      ...conflictFields,
+      ...updateFields,
+      ...fillFields,
+      ...appendFields,
+    ];
     final allDecided = actionableFields.every(
       (d) => _decisions.containsKey(d.fieldName),
     );
@@ -195,10 +207,7 @@ class _UploadReviewPageState extends ConsumerState<UploadReviewPage> {
               ],
 
               if (unchangedFields.isNotEmpty) ...[
-                _UnchangedSection(
-                  fields: unchangedFields,
-                  isDark: isDark,
-                ),
+                _UnchangedSection(fields: unchangedFields, isDark: isDark),
               ],
             ],
           ),
@@ -215,36 +224,42 @@ class _UploadReviewPageState extends ConsumerState<UploadReviewPage> {
   }
 
   Future<void> _submit(UploadJob job) async {
-    ref.read(mockAppStoreProvider.notifier).confirmUploadReview(
-          job.id,
-          decisions: _decisions,
-        );
+    ref
+        .read(mockAppStoreProvider.notifier)
+        .confirmUploadReview(job.id, decisions: _decisions);
 
     if (!mounted) return;
 
     final details = job.extractionDetails;
     final appendCount = details
-        .where((d) =>
-            d.changeType == FieldChangeType.append &&
-            _decisions[d.fieldName] == FieldReviewDecision.acceptNew)
+        .where(
+          (d) =>
+              d.changeType == FieldChangeType.append &&
+              _decisions[d.fieldName] == FieldReviewDecision.acceptNew,
+        )
         .length;
     final updateCount = details
-        .where((d) =>
-            d.changeType == FieldChangeType.update &&
-            _decisions[d.fieldName] == FieldReviewDecision.acceptNew)
+        .where(
+          (d) =>
+              d.changeType == FieldChangeType.update &&
+              _decisions[d.fieldName] == FieldReviewDecision.acceptNew,
+        )
         .length;
     final fillCount = details
-        .where((d) =>
-            d.changeType == FieldChangeType.fill &&
-            _decisions[d.fieldName] == FieldReviewDecision.acceptNew)
+        .where(
+          (d) =>
+              d.changeType == FieldChangeType.fill &&
+              _decisions[d.fieldName] == FieldReviewDecision.acceptNew,
+        )
         .length;
 
     final summaryParts = <String>[];
     if (appendCount > 0) summaryParts.add('新增 $appendCount 项');
     if (updateCount > 0) summaryParts.add('更新 $updateCount 项');
     if (fillCount > 0) summaryParts.add('补齐 $fillCount 项');
-    final summaryText =
-        summaryParts.isEmpty ? '已入库' : '已入库 · ${summaryParts.join(' · ')}';
+    final summaryText = summaryParts.isEmpty
+        ? '已入库'
+        : '已入库 · ${summaryParts.join(' · ')}';
 
     await showDialog<void>(
       context: context,
@@ -416,11 +431,9 @@ class _ChangeTypeSummaryBar extends StatelessWidget {
     final chips = <Widget>[
       if (conflictCount > 0)
         _chip(theme, '$conflictCount 冲突', AppPalette.error),
-      if (updateCount > 0)
-        _chip(theme, '$updateCount 更新', AppPalette.warning),
+      if (updateCount > 0) _chip(theme, '$updateCount 更新', AppPalette.warning),
       if (fillCount > 0) _chip(theme, '$fillCount 补齐', AppPalette.pending),
-      if (appendCount > 0)
-        _chip(theme, '$appendCount 新增', AppPalette.success),
+      if (appendCount > 0) _chip(theme, '$appendCount 新增', AppPalette.success),
       if (unchangedCount > 0)
         _chip(
           theme,
@@ -485,10 +498,7 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 6),
-        Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(color: color),
-        ),
+        Text(title, style: theme.textTheme.titleSmall?.copyWith(color: color)),
         const SizedBox(width: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -514,20 +524,20 @@ class _SectionHeader extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 Color _colorForChangeType(FieldChangeType type) => switch (type) {
-      FieldChangeType.conflict => AppPalette.error,
-      FieldChangeType.update => AppPalette.warning,
-      FieldChangeType.fill => AppPalette.pending,
-      FieldChangeType.append => AppPalette.success,
-      FieldChangeType.unchanged => AppPalette.muted,
-    };
+  FieldChangeType.conflict => AppPalette.error,
+  FieldChangeType.update => AppPalette.warning,
+  FieldChangeType.fill => AppPalette.pending,
+  FieldChangeType.append => AppPalette.success,
+  FieldChangeType.unchanged => AppPalette.muted,
+};
 
 StatusTone _toneForChangeType(FieldChangeType type) => switch (type) {
-      FieldChangeType.append => StatusTone.success,
-      FieldChangeType.fill => StatusTone.pending,
-      FieldChangeType.update => StatusTone.warning,
-      FieldChangeType.conflict => StatusTone.error,
-      FieldChangeType.unchanged => StatusTone.neutral,
-    };
+  FieldChangeType.append => StatusTone.success,
+  FieldChangeType.fill => StatusTone.pending,
+  FieldChangeType.update => StatusTone.warning,
+  FieldChangeType.conflict => StatusTone.error,
+  FieldChangeType.unchanged => StatusTone.neutral,
+};
 
 class _ComparisonFieldTile extends StatelessWidget {
   const _ComparisonFieldTile({
@@ -550,7 +560,8 @@ class _ComparisonFieldTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasComparison = detail.changeType == FieldChangeType.update ||
+    final hasComparison =
+        detail.changeType == FieldChangeType.update ||
         detail.changeType == FieldChangeType.conflict;
 
     return Padding(
@@ -563,7 +574,9 @@ class _ComparisonFieldTile extends StatelessWidget {
                 ? AppPalette.success.withAlpha(120)
                 : _accentColor.withAlpha(60),
           ),
-          color: _isDecided ? AppPalette.success.withAlpha(isDark ? 8 : 6) : null,
+          color: _isDecided
+              ? AppPalette.success.withAlpha(isDark ? 8 : 6)
+              : null,
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -571,6 +584,11 @@ class _ComparisonFieldTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(theme),
+              if (detail.fieldPath.isNotEmpty ||
+                  detail.canonicalImpact != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                _buildCrfMapping(theme),
+              ],
               const SizedBox(height: AppSpacing.md),
 
               if (hasComparison) _buildComparisonLayout(theme),
@@ -626,6 +644,23 @@ class _ComparisonFieldTile extends StatelessWidget {
     );
   }
 
+  Widget _buildCrfMapping(ThemeData theme) {
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: <Widget>[
+        if (detail.fieldPath.isNotEmpty)
+          StatusBadge(label: detail.fieldPath.join(' / ')),
+        if (detail.fieldCode != null) StatusBadge(label: detail.fieldCode!),
+        if (detail.canonicalImpact != null)
+          StatusBadge(
+            label: '主干回写 ${detail.canonicalImpact}',
+            tone: StatusTone.pending,
+          ),
+      ],
+    );
+  }
+
   Widget _buildComparisonLayout(ThemeData theme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,7 +678,11 @@ class _ComparisonFieldTile extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         Padding(
           padding: const EdgeInsets.only(top: 24),
-          child: Icon(Icons.arrow_forward_rounded, size: 16, color: _accentColor),
+          child: Icon(
+            Icons.arrow_forward_rounded,
+            size: 16,
+            color: _accentColor,
+          ),
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
@@ -777,9 +816,7 @@ class _ComparisonFieldTile extends StatelessWidget {
             onPressed: () => onDecide(FieldReviewDecision.acceptNew),
             icon: const Icon(Icons.check_rounded, size: 16),
             label: const Text('确认'),
-            style: FilledButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-            ),
+            style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
           ),
         ),
       ],
@@ -900,8 +937,8 @@ class _CompactValueBox extends StatelessWidget {
         color: isHighlighted
             ? color.withAlpha(isDark ? 20 : 12)
             : (isDark
-                ? AppPalette.surfaceVariantDark
-                : AppPalette.surfaceVariantLight),
+                  ? AppPalette.surfaceVariantDark
+                  : AppPalette.surfaceVariantLight),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         border: isHighlighted
             ? Border.all(color: color.withAlpha(80), width: 1)
@@ -940,10 +977,7 @@ class _CompactValueBox extends StatelessWidget {
 // Unchanged section (collapsible)
 // ---------------------------------------------------------------------------
 class _UnchangedSection extends StatefulWidget {
-  const _UnchangedSection({
-    required this.fields,
-    required this.isDark,
-  });
+  const _UnchangedSection({required this.fields, required this.isDark});
 
   final List<ExtractionDetail> fields;
   final bool isDark;
@@ -983,8 +1017,10 @@ class _UnchangedSectionState extends State<_UnchangedSection> {
                 ),
                 const SizedBox(width: 6),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: (widget.isDark ? Colors.white : Colors.black)
                         .withAlpha(12),
@@ -993,8 +1029,7 @@ class _UnchangedSectionState extends State<_UnchangedSection> {
                   child: Text(
                     '${widget.fields.length}',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color:
-                          widget.isDark ? Colors.white54 : Colors.black45,
+                      color: widget.isDark ? Colors.white54 : Colors.black45,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1018,7 +1053,9 @@ class _UnchangedSectionState extends State<_UnchangedSection> {
               padding: const EdgeInsets.only(bottom: 6),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md, vertical: 8),
+                  horizontal: AppSpacing.md,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: (widget.isDark ? Colors.white : Colors.black)
                       .withAlpha(6),
@@ -1029,8 +1066,7 @@ class _UnchangedSectionState extends State<_UnchangedSection> {
                     Icon(
                       Icons.check_rounded,
                       size: 14,
-                      color:
-                          widget.isDark ? Colors.white38 : Colors.black38,
+                      color: widget.isDark ? Colors.white38 : Colors.black38,
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
@@ -1110,8 +1146,8 @@ class _BottomBar extends StatelessWidget {
                       color: i < decidedCount
                           ? AppPalette.success
                           : (isDark
-                              ? AppPalette.borderDark
-                              : AppPalette.borderLight),
+                                ? AppPalette.borderDark
+                                : AppPalette.borderLight),
                     ),
                   ),
                 ],

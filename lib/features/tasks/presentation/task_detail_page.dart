@@ -11,17 +11,16 @@ import '../../../shared/widgets/app_states.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../domain/task_models.dart';
 
-final taskDetailProvider =
-    FutureProvider.family<CompletenessTask?, String>((ref, taskId) async {
+final taskDetailProvider = FutureProvider.family<CompletenessTask?, String>((
+  ref,
+  taskId,
+) async {
   ref.watch(mockAppStoreProvider);
   return ref.read(taskRepositoryProvider).getTask(taskId);
 });
 
 class TaskDetailPage extends ConsumerWidget {
-  const TaskDetailPage({
-    required this.taskId,
-    super.key,
-  });
+  const TaskDetailPage({required this.taskId, super.key});
 
   final String taskId;
 
@@ -50,8 +49,8 @@ class TaskDetailPage extends ConsumerWidget {
           final accentColor = task.isBlocking
               ? AppPalette.error
               : isConflict
-                  ? AppPalette.conflict
-                  : AppPalette.warning;
+              ? AppPalette.conflict
+              : AppPalette.warning;
 
           final cases = ref.read(mockAppStoreProvider).cases;
           final matchingCases = cases.where(
@@ -105,14 +104,16 @@ class TaskDetailPage extends ConsumerWidget {
               Wrap(
                 spacing: AppSpacing.xs,
                 runSpacing: AppSpacing.xs,
-                children: task.fields.map((f) {
-                  final tone = task.isBlocking
-                      ? StatusTone.error
-                      : isConflict
+                children: task.fields
+                    .map((f) {
+                      final tone = task.isBlocking
+                          ? StatusTone.error
+                          : isConflict
                           ? StatusTone.conflict
                           : StatusTone.warning;
-                  return StatusBadge(label: f, tone: tone);
-                }).toList(growable: false),
+                      return StatusBadge(label: f, tone: tone);
+                    })
+                    .toList(growable: false),
               ),
 
               if (isConflict) ...<Widget>[
@@ -126,9 +127,7 @@ class TaskDetailPage extends ConsumerWidget {
                         .resolveTask(task.id, resolvedValue: resolvedValue);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('已完成冲突核对，采用值：$resolvedValue'),
-                        ),
+                        SnackBar(content: Text('已完成冲突核对，采用值：$resolvedValue')),
                       );
                       context.pop();
                     }
@@ -265,6 +264,31 @@ class _DetailSection extends StatelessWidget {
             value: task.dueLabel,
             theme: theme,
           ),
+          const SizedBox(height: AppSpacing.sm),
+          _DetailRow(
+            icon: Icons.account_tree_outlined,
+            label: '任务范围',
+            value: task.scope.label,
+            theme: theme,
+          ),
+          if (task.templateId != null) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            _DetailRow(
+              icon: Icons.view_list_outlined,
+              label: '模板',
+              value: task.templateId!,
+              theme: theme,
+            ),
+          ],
+          if (task.fieldPath.isNotEmpty) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            _DetailRow(
+              icon: Icons.route_outlined,
+              label: 'CRF路径',
+              value: task.fieldPath.join(' / '),
+              theme: theme,
+            ),
+          ],
         ],
       ),
     );
@@ -294,9 +318,7 @@ class _DetailRow extends StatelessWidget {
           width: 64,
           child: Text(label, style: theme.textTheme.labelSmall),
         ),
-        Expanded(
-          child: Text(value, style: theme.textTheme.bodyMedium),
-        ),
+        Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
       ],
     );
   }
@@ -460,14 +482,16 @@ class _ConflictResolutionSectionState
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppPalette.error
-                                .withAlpha(widget.isDark ? 12 : 8),
+                            color: AppPalette.error.withAlpha(
+                              widget.isDark ? 12 : 8,
+                            ),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             '${conflict.sourceA}：${conflict.valueA}',
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: AppPalette.error),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppPalette.error,
+                            ),
                           ),
                         ),
                       ),
@@ -479,14 +503,16 @@ class _ConflictResolutionSectionState
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppPalette.success
-                                .withAlpha(widget.isDark ? 12 : 8),
+                            color: AppPalette.success.withAlpha(
+                              widget.isDark ? 12 : 8,
+                            ),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             '${conflict.sourceB}：${conflict.valueB}',
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: AppPalette.success),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppPalette.success,
+                            ),
                           ),
                         ),
                       ),
@@ -543,14 +569,17 @@ class _ConflictResolutionSectionState
                   Text(
                     label,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withAlpha(widget.isDark ? 12 : 8),
                       borderRadius: BorderRadius.circular(4),
@@ -608,8 +637,9 @@ class _ConflictResolutionSectionState
                   Text(
                     '手动输入',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                   if (isSelected) ...<Widget>[
@@ -625,8 +655,9 @@ class _ConflictResolutionSectionState
                           vertical: 10,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusSm),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusSm,
+                          ),
                         ),
                       ),
                       style: theme.textTheme.bodyMedium,

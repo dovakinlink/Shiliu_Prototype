@@ -26,6 +26,10 @@ class CompletenessTask {
     required this.fields,
     required this.owner,
     required this.dueLabel,
+    this.templateId,
+    this.fieldCode,
+    this.fieldPath = const <String>[],
+    this.scope = TaskScope.canonical,
     this.conflicts = const <ConflictEntry>[],
     this.isBlocking = false,
     this.isCompleted = false,
@@ -37,6 +41,10 @@ class CompletenessTask {
   final TaskType type;
   final String description;
   final List<String> fields;
+  final String? templateId;
+  final String? fieldCode;
+  final List<String> fieldPath;
+  final TaskScope scope;
   final List<ConflictEntry> conflicts;
   final String owner;
   final String dueLabel;
@@ -47,6 +55,10 @@ class CompletenessTask {
     bool? isCompleted,
     List<String>? fields,
     List<ConflictEntry>? conflicts,
+    String? templateId,
+    String? fieldCode,
+    List<String>? fieldPath,
+    TaskScope? scope,
   }) {
     return CompletenessTask(
       id: id,
@@ -55,6 +67,10 @@ class CompletenessTask {
       type: type,
       description: description,
       fields: fields ?? this.fields,
+      templateId: templateId ?? this.templateId,
+      fieldCode: fieldCode ?? this.fieldCode,
+      fieldPath: fieldPath ?? this.fieldPath,
+      scope: scope ?? this.scope,
       conflicts: conflicts ?? this.conflicts,
       owner: owner,
       dueLabel: dueLabel,
@@ -73,6 +89,9 @@ class ScreeningSnapshot {
     required this.blockingFields,
     required this.reminderFields,
     required this.tasks,
+    this.coreCompletionRate = 0,
+    this.crfCompletionRate = 0,
+    this.crfTemplateLabel,
   });
 
   final String caseId;
@@ -82,11 +101,14 @@ class ScreeningSnapshot {
   final List<String> blockingFields;
   final List<String> reminderFields;
   final List<CompletenessTask> tasks;
+  final double coreCompletionRate;
+  final double crfCompletionRate;
+  final String? crfTemplateLabel;
 
   List<String> get missingFields => <String>[
-        ...blockingFields,
-        ...reminderFields,
-      ];
+    ...blockingFields,
+    ...reminderFields,
+  ];
 
   ScreeningSnapshot copyWith({
     ScreeningStatus? status,
@@ -94,6 +116,9 @@ class ScreeningSnapshot {
     List<String>? blockingFields,
     List<String>? reminderFields,
     List<CompletenessTask>? tasks,
+    double? coreCompletionRate,
+    double? crfCompletionRate,
+    String? crfTemplateLabel,
   }) {
     return ScreeningSnapshot(
       caseId: caseId,
@@ -103,6 +128,9 @@ class ScreeningSnapshot {
       blockingFields: blockingFields ?? this.blockingFields,
       reminderFields: reminderFields ?? this.reminderFields,
       tasks: tasks ?? this.tasks,
+      coreCompletionRate: coreCompletionRate ?? this.coreCompletionRate,
+      crfCompletionRate: crfCompletionRate ?? this.crfCompletionRate,
+      crfTemplateLabel: crfTemplateLabel ?? this.crfTemplateLabel,
     );
   }
 }

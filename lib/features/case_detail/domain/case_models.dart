@@ -1,4 +1,5 @@
 import '../../../core/constants/app_enums.dart';
+import '../../crf/domain/crf_models.dart';
 
 class CaseSummary {
   const CaseSummary({
@@ -12,6 +13,12 @@ class CaseSummary {
     required this.lineOfTherapy,
     required this.currentRegimen,
     required this.diseaseGroup,
+    required this.diseaseProfileId,
+    required this.diseaseGroupCode,
+    required this.crfTemplateId,
+    required this.crfTemplateVersion,
+    required this.crfCompletionRate,
+    required this.crfBlockingMissingCount,
     required this.screeningStatus,
     required this.ecog,
     required this.hasLiverRisk,
@@ -29,6 +36,12 @@ class CaseSummary {
   final int lineOfTherapy;
   final String currentRegimen;
   final String diseaseGroup;
+  final String diseaseProfileId;
+  final String diseaseGroupCode;
+  final String crfTemplateId;
+  final String crfTemplateVersion;
+  final double crfCompletionRate;
+  final int crfBlockingMissingCount;
   final ScreeningStatus screeningStatus;
   final int ecog;
   final bool hasLiverRisk;
@@ -40,6 +53,12 @@ class CaseSummary {
     String? stage,
     int? lineOfTherapy,
     String? currentRegimen,
+    String? diseaseProfileId,
+    String? diseaseGroupCode,
+    String? crfTemplateId,
+    String? crfTemplateVersion,
+    double? crfCompletionRate,
+    int? crfBlockingMissingCount,
     ScreeningStatus? screeningStatus,
     int? ecog,
     bool? hasLiverRisk,
@@ -57,6 +76,13 @@ class CaseSummary {
       lineOfTherapy: lineOfTherapy ?? this.lineOfTherapy,
       currentRegimen: currentRegimen ?? this.currentRegimen,
       diseaseGroup: diseaseGroup,
+      diseaseProfileId: diseaseProfileId ?? this.diseaseProfileId,
+      diseaseGroupCode: diseaseGroupCode ?? this.diseaseGroupCode,
+      crfTemplateId: crfTemplateId ?? this.crfTemplateId,
+      crfTemplateVersion: crfTemplateVersion ?? this.crfTemplateVersion,
+      crfCompletionRate: crfCompletionRate ?? this.crfCompletionRate,
+      crfBlockingMissingCount:
+          crfBlockingMissingCount ?? this.crfBlockingMissingCount,
       screeningStatus: screeningStatus ?? this.screeningStatus,
       ecog: ecog ?? this.ecog,
       hasLiverRisk: hasLiverRisk ?? this.hasLiverRisk,
@@ -111,10 +137,7 @@ class MolecularResult {
 }
 
 class BiomarkerResult {
-  const BiomarkerResult({
-    required this.name,
-    required this.value,
-  });
+  const BiomarkerResult({required this.name, required this.value});
 
   final String name;
   final String value;
@@ -161,10 +184,7 @@ class DrugExposure {
 // ---------------------------------------------------------------------------
 
 class LabPanel {
-  const LabPanel({
-    required this.collectionDate,
-    required this.results,
-  });
+  const LabPanel({required this.collectionDate, required this.results});
 
   final String collectionDate;
   final List<LabResult> results;
@@ -231,19 +251,14 @@ class AdverseEventRecord {
 // ---------------------------------------------------------------------------
 
 class VitalSignsInfo {
-  const VitalSignsInfo({
-    required this.ecog,
-    this.weight,
-  });
+  const VitalSignsInfo({required this.ecog, this.weight});
 
   final int ecog;
   final double? weight;
 }
 
 class InfectionInfo {
-  const InfectionInfo({
-    required this.hbvStatus,
-  });
+  const InfectionInfo({required this.hbvStatus});
 
   final String hbvStatus;
 }
@@ -265,6 +280,9 @@ class CaseDetail {
     required this.timeline,
     required this.structuredFields,
     required this.evidenceDocuments,
+    required this.diseaseProfile,
+    required this.crfTemplate,
+    required this.crfValues,
     required this.diagnosis,
     required this.molecularResults,
     required this.biomarkers,
@@ -287,6 +305,9 @@ class CaseDetail {
   final List<TimelineEvent> timeline;
   final List<StructuredField> structuredFields;
   final List<EvidenceDocument> evidenceDocuments;
+  final DiseaseProfile diseaseProfile;
+  final CRFTemplate crfTemplate;
+  final List<CaseCRFValue> crfValues;
 
   final DiagnosisInfo diagnosis;
   final List<MolecularResult> molecularResults;
@@ -306,6 +327,9 @@ class CaseDetail {
     List<TimelineEvent>? timeline,
     List<StructuredField>? structuredFields,
     List<EvidenceDocument>? evidenceDocuments,
+    DiseaseProfile? diseaseProfile,
+    CRFTemplate? crfTemplate,
+    List<CaseCRFValue>? crfValues,
   }) {
     return CaseDetail(
       summary: summary ?? this.summary,
@@ -319,6 +343,9 @@ class CaseDetail {
       timeline: timeline ?? this.timeline,
       structuredFields: structuredFields ?? this.structuredFields,
       evidenceDocuments: evidenceDocuments ?? this.evidenceDocuments,
+      diseaseProfile: diseaseProfile ?? this.diseaseProfile,
+      crfTemplate: crfTemplate ?? this.crfTemplate,
+      crfValues: crfValues ?? this.crfValues,
       diagnosis: diagnosis,
       molecularResults: molecularResults,
       biomarkers: biomarkers,
@@ -419,10 +446,7 @@ class StructuredField {
   final bool isRequired;
   final bool isBlocking;
 
-  StructuredField copyWith({
-    String? value,
-    FieldConfidence? confidence,
-  }) {
+  StructuredField copyWith({String? value, FieldConfidence? confidence}) {
     return StructuredField(
       id: id,
       label: label,

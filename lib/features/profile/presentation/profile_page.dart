@@ -6,13 +6,13 @@ import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../data/mock/mock_app_store.dart';
+import '../../../data/mock/mock_crf_templates.dart';
 import '../../../data/mock/mock_repositories.dart';
 import '../../../shared/widgets/info_card.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../dashboard/domain/dashboard_metric.dart';
 
-final _profileMetricsProvider =
-    FutureProvider<DashboardSnapshot>((ref) async {
+final _profileMetricsProvider = FutureProvider<DashboardSnapshot>((ref) async {
   ref.watch(mockAppStoreProvider);
   return ref.read(dashboardRepositoryProvider).getSnapshot();
 });
@@ -85,10 +85,7 @@ class _UserInfoHeader extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: <Color>[
-                  AppPalette.primary,
-                  AppPalette.primaryLight,
-                ],
+                colors: <Color>[AppPalette.primary, AppPalette.primaryLight],
               ),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
@@ -109,22 +106,13 @@ class _UserInfoHeader extends StatelessWidget {
               children: <Widget>[
                 Text('张医生', style: theme.textTheme.titleLarge),
                 const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  '肿瘤内科 · 主治医师',
-                  style: theme.textTheme.bodyMedium,
-                ),
+                Text('肿瘤内科 · 主治医师', style: theme.textTheme.bodyMedium),
                 const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: <Widget>[
-                    StatusBadge(
-                      label: '项目秘书',
-                      tone: StatusTone.pending,
-                    ),
+                    StatusBadge(label: '项目秘书', tone: StatusTone.pending),
                     const SizedBox(width: AppSpacing.xs),
-                    StatusBadge(
-                      label: '数据录入',
-                      tone: StatusTone.success,
-                    ),
+                    StatusBadge(label: '数据录入', tone: StatusTone.success),
                   ],
                 ),
               ],
@@ -159,10 +147,12 @@ class _MetricGrid extends StatelessWidget {
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
           children: metrics
-              .map((metric) => SizedBox(
-                    width: cardWidth,
-                    child: _MetricTile(metric: metric),
-                  ))
+              .map(
+                (metric) => SizedBox(
+                  width: cardWidth,
+                  child: _MetricTile(metric: metric),
+                ),
+              )
               .toList(growable: false),
         );
       },
@@ -196,8 +186,7 @@ class _MetricTile extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           StatusBadge(
             label: metric.deltaLabel,
-            tone:
-                metric.isPositive ? StatusTone.success : StatusTone.warning,
+            tone: metric.isPositive ? StatusTone.success : StatusTone.warning,
           ),
         ],
       ),
@@ -293,8 +282,7 @@ class _QuickEntryTile extends StatelessWidget {
                     color: isDark
                         ? AppPalette.primary.withAlpha(25)
                         : AppPalette.primarySurface,
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusSm),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                   ),
                   alignment: Alignment.center,
                   child: Icon(icon, size: 18, color: AppPalette.primary),
@@ -364,26 +352,30 @@ class _AppearanceCard extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
-            children: _modes.map((entry) {
-              final (mode, label, icon) = entry;
-              final selected = currentMode == mode;
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: mode == ThemeMode.system ? 0 : AppSpacing.sm,
-                  ),
-                  child: _ThemeModeChip(
-                    icon: icon,
-                    label: label,
-                    selected: selected,
-                    isDark: isDark,
-                    onTap: () {
-                      ref.read(themeModeProvider.notifier).setThemeMode(mode);
-                    },
-                  ),
-                ),
-              );
-            }).toList(growable: false),
+            children: _modes
+                .map((entry) {
+                  final (mode, label, icon) = entry;
+                  final selected = currentMode == mode;
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: mode == ThemeMode.system ? 0 : AppSpacing.sm,
+                      ),
+                      child: _ThemeModeChip(
+                        icon: icon,
+                        label: label,
+                        selected: selected,
+                        isDark: isDark,
+                        onTap: () {
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(mode);
+                        },
+                      ),
+                    ),
+                  );
+                })
+                .toList(growable: false),
           ),
         ],
       ),
@@ -412,13 +404,17 @@ class _ThemeModeChip extends StatelessWidget {
 
     final bgColor = selected
         ? (isDark
-            ? AppPalette.primary.withAlpha(30)
-            : AppPalette.primarySurface)
-        : (isDark ? AppPalette.surfaceVariantDark : AppPalette.surfaceVariantLight);
+              ? AppPalette.primary.withAlpha(30)
+              : AppPalette.primarySurface)
+        : (isDark
+              ? AppPalette.surfaceVariantDark
+              : AppPalette.surfaceVariantLight);
 
     final fgColor = selected
         ? AppPalette.primary
-        : (isDark ? AppPalette.textSecondaryDark : AppPalette.textSecondaryLight);
+        : (isDark
+              ? AppPalette.textSecondaryDark
+              : AppPalette.textSecondaryLight);
 
     return Material(
       color: bgColor,
@@ -431,7 +427,10 @@ class _ThemeModeChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             border: selected
-                ? Border.all(color: AppPalette.primary.withAlpha(80), width: 1.5)
+                ? Border.all(
+                    color: AppPalette.primary.withAlpha(80),
+                    width: 1.5,
+                  )
                 : null,
           ),
           child: Column(
@@ -460,15 +459,22 @@ class _SystemInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return InfoCard(
       child: Column(
         children: <Widget>[
           _InfoRow(label: '应用版本', value: 'v1.0.0 (Prototype)'),
           const SizedBox(height: AppSpacing.md),
-          _InfoRow(label: '数据字典版本', value: 'v2026-04-14'),
+          _InfoRow(label: '通用主干版本', value: 'Shiliu Core v2026-04'),
           const SizedBox(height: AppSpacing.md),
-          _InfoRow(label: '病例总数', value: '24 例'),
+          _InfoRow(label: '已启用 CRF 模板', value: '${mockCrfTemplates.length} 套'),
+          const SizedBox(height: AppSpacing.md),
+          _InfoRow(
+            label: 'GU 模板字段',
+            value:
+                '${mockCrfTemplateById('gu-crf-v2026-03').fieldCount} 项 · ${mockCrfTemplateById('gu-crf-v2026-03').governanceFieldCount} 项待治理',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _InfoRow(label: '最近更新', value: '2026-04-24'),
           const SizedBox(height: AppSpacing.md),
           _InfoRow(label: '环境', value: 'Mock 数据 · 开发模式'),
         ],

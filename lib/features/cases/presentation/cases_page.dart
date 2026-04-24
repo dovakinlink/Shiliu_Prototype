@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../data/mock/mock_app_store.dart';
+import '../../../data/mock/mock_crf_templates.dart';
 import '../../../data/mock/mock_repositories.dart';
 import '../../../shared/widgets/app_filter_chip.dart';
 import '../../../shared/widgets/app_states.dart';
@@ -13,12 +14,13 @@ import '../../../shared/widgets/patient_summary_card.dart';
 import '../../search/domain/search_models.dart';
 import '../../search/presentation/search_page.dart';
 
-final _searchQueryProvider =
-    NotifierProvider<_SearchQueryNotifier, String>(_SearchQueryNotifier.new);
+final _searchQueryProvider = NotifierProvider<_SearchQueryNotifier, String>(
+  _SearchQueryNotifier.new,
+);
 
-final _filterExpandedProvider =
-    NotifierProvider<_FilterExpandedNotifier, bool>(
-        _FilterExpandedNotifier.new);
+final _filterExpandedProvider = NotifierProvider<_FilterExpandedNotifier, bool>(
+  _FilterExpandedNotifier.new,
+);
 
 class _SearchQueryNotifier extends Notifier<String> {
   @override
@@ -41,9 +43,11 @@ final _casesResultsProvider = FutureProvider<List<SearchResult>>((ref) async {
   final results = await ref.read(searchRepositoryProvider).searchCases(filter);
   if (query.isEmpty) return results;
   return results
-      .where((r) =>
-          r.summary.patientName.toLowerCase().contains(query) ||
-          r.summary.patientCode.toLowerCase().contains(query))
+      .where(
+        (r) =>
+            r.summary.patientName.toLowerCase().contains(query) ||
+            r.summary.patientCode.toLowerCase().contains(query),
+      )
       .toList(growable: false);
 });
 
@@ -90,144 +94,150 @@ class _CasesPageState extends ConsumerState<CasesPage> {
       ),
       body: SafeArea(
         child: CustomScrollView(
-        slivers: <Widget>[
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.page, AppSpacing.xxl,
-                AppSpacing.page, 0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Text('病例库', style: theme.textTheme.headlineMedium),
-                      const Spacer(),
-                      results.whenOrNull(
-                        data: (items) => Text(
-                          '${items.length} 例',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: AppPalette.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ) ?? const SizedBox.shrink(),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _SearchBar(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    onChanged: (value) => ref
-                        .read(_searchQueryProvider.notifier)
-                        .set(value),
-                    onClear: () {
-                      _searchController.clear();
-                      ref.read(_searchQueryProvider.notifier).set('');
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          if (filter.hasActiveFilters)
+          slivers: <Widget>[
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.page, AppSpacing.md,
-                  AppSpacing.page, 0,
+                  AppSpacing.page,
+                  AppSpacing.xxl,
+                  AppSpacing.page,
+                  0,
                 ),
-                child: _ActiveFilterChips(
-                  filter: filter,
-                  onClear: ref.read(searchFilterProvider.notifier).clear,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Text('病例库', style: theme.textTheme.headlineMedium),
+                        const Spacer(),
+                        results.whenOrNull(
+                              data: (items) => Text(
+                                '${items.length} 例',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: AppPalette.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ) ??
+                            const SizedBox.shrink(),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    _SearchBar(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      onChanged: (value) =>
+                          ref.read(_searchQueryProvider.notifier).set(value),
+                      onClear: () {
+                        _searchController.clear();
+                        ref.read(_searchQueryProvider.notifier).set('');
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
 
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.page, AppSpacing.md,
-                AppSpacing.page, 0,
+            if (filter.hasActiveFilters)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.page,
+                    AppSpacing.md,
+                    AppSpacing.page,
+                    0,
+                  ),
+                  child: _ActiveFilterChips(
+                    filter: filter,
+                    onClear: ref.read(searchFilterProvider.notifier).clear,
+                  ),
+                ),
               ),
-              child: _FilterToggleButton(
-                isExpanded: isExpanded,
-                hasActiveFilters: filter.hasActiveFilters,
-                onTap: () => ref
-                    .read(_filterExpandedProvider.notifier)
-                    .toggle(),
-              ),
-            ),
-          ),
 
-          if (isExpanded)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.page, AppSpacing.md,
-                  AppSpacing.page, 0,
+                  AppSpacing.page,
+                  AppSpacing.md,
+                  AppSpacing.page,
+                  0,
                 ),
-                child: const _FilterPanel(),
+                child: _FilterToggleButton(
+                  isExpanded: isExpanded,
+                  hasActiveFilters: filter.hasActiveFilters,
+                  onTap: () =>
+                      ref.read(_filterExpandedProvider.notifier).toggle(),
+                ),
               ),
             ),
 
-          const SliverToBoxAdapter(
-            child: SizedBox(height: AppSpacing.lg),
-          ),
+            if (isExpanded)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.page,
+                    AppSpacing.md,
+                    AppSpacing.page,
+                    0,
+                  ),
+                  child: const _FilterPanel(),
+                ),
+              ),
 
-          results.when(
-            data: (items) {
-              if (items.isEmpty) {
-                return const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: AppEmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: '没有符合条件的病例',
-                      description: '试试放宽筛选条件或修改搜索词',
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+
+            results.when(
+              data: (items) {
+                if (items.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: AppEmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: '没有符合条件的病例',
+                        description: '试试放宽筛选条件或修改搜索词',
+                      ),
+                    ),
+                  );
+                }
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.page,
+                      0,
+                      AppSpacing.page,
+                      AppSpacing.xxxxl,
+                    ),
+                    child: Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: <Widget>[
+                          for (int i = 0; i < items.length; i++) ...<Widget>[
+                            PatientSummaryCard(
+                              summary: items[i].summary,
+                              onTap: () =>
+                                  context.push('/case/${items[i].summary.id}'),
+                            ),
+                            if (i < items.length - 1)
+                              const Divider(height: 1, indent: 58),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 );
-              }
-              return SliverToBoxAdapter(
+              },
+              error: (error, _) =>
+                  SliverFillRemaining(child: AppErrorState(message: '$error')),
+              loading: () => const SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.page, 0,
-                    AppSpacing.page, AppSpacing.xxxxl,
-                  ),
-                  child: Card(
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: <Widget>[
-                        for (int i = 0; i < items.length; i++) ...<Widget>[
-                          PatientSummaryCard(
-                            summary: items[i].summary,
-                            onTap: () =>
-                                context.push('/case/${items[i].summary.id}'),
-                          ),
-                          if (i < items.length - 1)
-                            const Divider(height: 1, indent: 58),
-                        ],
-                      ],
-                    ),
-                  ),
+                  padding: EdgeInsets.all(AppSpacing.page),
+                  child: SkeletonBlock(height: 160),
                 ),
-              );
-            },
-            error: (error, _) => SliverFillRemaining(
-              child: AppErrorState(message: '$error'),
-            ),
-            loading: () => const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.page),
-                child: SkeletonBlock(height: 160),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -267,10 +277,7 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _ActiveFilterChips extends StatelessWidget {
-  const _ActiveFilterChips({
-    required this.filter,
-    required this.onClear,
-  });
+  const _ActiveFilterChips({required this.filter, required this.onClear});
 
   final SearchFilter filter;
   final VoidCallback onClear;
@@ -284,6 +291,9 @@ class _ActiveFilterChips extends StatelessWidget {
       if (filter.drugClass != null) filter.drugClass!,
       if (filter.comorbidity != null) filter.comorbidity!,
       if (filter.screeningStatusLabel != null) filter.screeningStatusLabel!,
+      if (filter.diseaseProfileId != null)
+        mockDiseaseProfileById(filter.diseaseProfileId!).displayName,
+      ...filter.crfConditions.map((condition) => condition.displayLabel),
       if (filter.lineOfTherapy != null) '${filter.lineOfTherapy} 线',
       if (filter.hasLiverRisk == true) '肝功异常',
       if (filter.ecogMax != null) 'ECOG ≤ ${filter.ecogMax}',
@@ -341,9 +351,7 @@ class _FilterToggleButton extends StatelessWidget {
           Text(
             isExpanded ? '收起筛选' : '展开筛选',
             style: theme.textTheme.labelMedium?.copyWith(
-              color: hasActiveFilters
-                  ? AppPalette.primary
-                  : null,
+              color: hasActiveFilters ? AppPalette.primary : null,
             ),
           ),
           const SizedBox(width: AppSpacing.xxs),
@@ -374,10 +382,7 @@ class _FilterPanel extends ConsumerWidget {
         color: theme.colorScheme.surface,
 
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(
-          color: theme.colorScheme.outline,
-          width: 0.5,
-        ),
+        border: Border.all(color: theme.colorScheme.outline, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,121 +390,212 @@ class _FilterPanel extends ConsumerWidget {
           _FilterGroup(
             title: '原发部位',
             children: SearchPage.primarySites
-                .map((item) => AppFilterChip(
-                      label: item,
-                      selected: filter.primarySite == item,
-                      onSelected: (selected) {
-                        ref.read(searchFilterProvider.notifier).setFilter(
-                              filter.copyWith(
-                                primarySite: selected ? item : null,
-                                clearPrimarySite: !selected,
-                              ),
-                            );
-                      },
-                    ))
+                .map(
+                  (item) => AppFilterChip(
+                    label: item,
+                    selected: filter.primarySite == item,
+                    onSelected: (selected) {
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              primarySite: selected ? item : null,
+                              clearPrimarySite: !selected,
+                            ),
+                          );
+                    },
+                  ),
+                )
                 .toList(growable: false),
           ),
           _FilterGroup(
             title: '瘤种',
             children: SearchPage.tumorTypes
-                .map((item) => AppFilterChip(
-                      label: item,
-                      selected: filter.tumorType == item,
-                      onSelected: (selected) {
-                        ref.read(searchFilterProvider.notifier).setFilter(
-                              filter.copyWith(
-                                tumorType: selected ? item : null,
-                                clearTumorType: !selected,
-                              ),
-                            );
-                      },
-                    ))
+                .map(
+                  (item) => AppFilterChip(
+                    label: item,
+                    selected: filter.tumorType == item,
+                    onSelected: (selected) {
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              tumorType: selected ? item : null,
+                              clearTumorType: !selected,
+                            ),
+                          );
+                    },
+                  ),
+                )
+                .toList(growable: false),
+          ),
+          _FilterGroup(
+            title: '瘤种包',
+            children: enabledMockDiseaseProfiles
+                .map(
+                  (profile) => AppFilterChip(
+                    label: '${profile.groupCode} ${profile.tumorName}',
+                    selected: filter.diseaseProfileId == profile.id,
+                    onSelected: (selected) {
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              diseaseProfileId: selected ? profile.id : null,
+                              crfTemplateId: selected
+                                  ? profile.defaultTemplateId
+                                  : null,
+                              clearDiseaseProfile: !selected,
+                              clearCrfTemplate: !selected,
+                              clearCrfConditions: !selected,
+                            ),
+                          );
+                    },
+                  ),
+                )
+                .toList(growable: false),
+          ),
+          _FilterGroup(
+            title: '专病筛选',
+            children: SearchPage.crfDemoConditions
+                .map((condition) {
+                  final selected = filter.crfConditions.any(
+                    (item) =>
+                        item.fieldCode == condition.fieldCode &&
+                        item.value == condition.value,
+                  );
+                  return AppFilterChip(
+                    label: condition.displayLabel,
+                    selected: selected,
+                    onSelected: (value) {
+                      final next = value
+                          ? <CRFFilterCondition>[
+                              ...filter.crfConditions,
+                              condition,
+                            ]
+                          : filter.crfConditions
+                                .where(
+                                  (item) =>
+                                      item.fieldCode != condition.fieldCode,
+                                )
+                                .toList(growable: false);
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              diseaseProfileId: 'gu-bladder',
+                              crfTemplateId: condition.templateId,
+                              crfConditions: next,
+                            ),
+                          );
+                    },
+                  );
+                })
                 .toList(growable: false),
           ),
           _FilterGroup(
             title: '分期',
             children: SearchPage.stages
-                .map((item) => AppFilterChip(
-                      label: item,
-                      selected: filter.stage == item,
-                      onSelected: (selected) {
-                        ref.read(searchFilterProvider.notifier).setFilter(
-                              filter.copyWith(
-                                stage: selected ? item : null,
-                                clearStage: !selected,
-                              ),
-                            );
-                      },
-                    ))
+                .map(
+                  (item) => AppFilterChip(
+                    label: item,
+                    selected: filter.stage == item,
+                    onSelected: (selected) {
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              stage: selected ? item : null,
+                              clearStage: !selected,
+                            ),
+                          );
+                    },
+                  ),
+                )
                 .toList(growable: false),
           ),
           _FilterGroup(
             title: '药物类别',
             children: SearchPage.drugClasses
-                .map((item) => AppFilterChip(
-                      label: item,
-                      selected: filter.drugClass == item,
-                      onSelected: (selected) {
-                        ref.read(searchFilterProvider.notifier).setFilter(
-                              filter.copyWith(
-                                drugClass: selected ? item : null,
-                                clearDrugClass: !selected,
-                              ),
-                            );
-                      },
-                    ))
+                .map(
+                  (item) => AppFilterChip(
+                    label: item,
+                    selected: filter.drugClass == item,
+                    onSelected: (selected) {
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              drugClass: selected ? item : null,
+                              clearDrugClass: !selected,
+                            ),
+                          );
+                    },
+                  ),
+                )
                 .toList(growable: false),
           ),
           _FilterGroup(
             title: '共病',
             children: SearchPage.comorbidities
-                .map((item) => AppFilterChip(
-                      label: item,
-                      selected: filter.comorbidity == item,
-                      onSelected: (selected) {
-                        ref.read(searchFilterProvider.notifier).setFilter(
-                              filter.copyWith(
-                                comorbidity: selected ? item : null,
-                                clearComorbidity: !selected,
-                              ),
-                            );
-                      },
-                    ))
+                .map(
+                  (item) => AppFilterChip(
+                    label: item,
+                    selected: filter.comorbidity == item,
+                    onSelected: (selected) {
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              comorbidity: selected ? item : null,
+                              clearComorbidity: !selected,
+                            ),
+                          );
+                    },
+                  ),
+                )
                 .toList(growable: false),
           ),
           _FilterGroup(
             title: '筛查状态',
             children: SearchPage.screeningStatuses
-                .map((item) => AppFilterChip(
-                      label: item,
-                      selected: filter.screeningStatusLabel == item,
-                      onSelected: (selected) {
-                        ref.read(searchFilterProvider.notifier).setFilter(
-                              filter.copyWith(
-                                screeningStatusLabel:
-                                    selected ? item : null,
-                                clearScreeningStatus: !selected,
-                              ),
-                            );
-                      },
-                    ))
+                .map(
+                  (item) => AppFilterChip(
+                    label: item,
+                    selected: filter.screeningStatusLabel == item,
+                    onSelected: (selected) {
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              screeningStatusLabel: selected ? item : null,
+                              clearScreeningStatus: !selected,
+                            ),
+                          );
+                    },
+                  ),
+                )
                 .toList(growable: false),
           ),
           _FilterGroup(
             title: '治疗线数',
             children: <int>[1, 2, 3]
-                .map((item) => AppFilterChip(
-                      label: '$item 线',
-                      selected: filter.lineOfTherapy == item,
-                      onSelected: (selected) {
-                        ref.read(searchFilterProvider.notifier).setFilter(
-                              filter.copyWith(
-                                lineOfTherapy: selected ? item : null,
-                                clearLineOfTherapy: !selected,
-                              ),
-                            );
-                      },
-                    ))
+                .map(
+                  (item) => AppFilterChip(
+                    label: '$item 线',
+                    selected: filter.lineOfTherapy == item,
+                    onSelected: (selected) {
+                      ref
+                          .read(searchFilterProvider.notifier)
+                          .setFilter(
+                            filter.copyWith(
+                              lineOfTherapy: selected ? item : null,
+                              clearLineOfTherapy: !selected,
+                            ),
+                          );
+                    },
+                  ),
+                )
                 .toList(growable: false),
           ),
           Row(
@@ -508,12 +604,11 @@ class _FilterPanel extends ConsumerWidget {
                 child: SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   value: filter.hasLiverRisk ?? false,
-                  title: Text('肝功异常',
-                      style: theme.textTheme.bodyMedium),
+                  title: Text('肝功异常', style: theme.textTheme.bodyMedium),
                   onChanged: (value) {
-                    ref.read(searchFilterProvider.notifier).setFilter(
-                          filter.copyWith(hasLiverRisk: value),
-                        );
+                    ref
+                        .read(searchFilterProvider.notifier)
+                        .setFilter(filter.copyWith(hasLiverRisk: value));
                   },
                 ),
               ),
@@ -522,13 +617,17 @@ class _FilterPanel extends ConsumerWidget {
                   initialValue: filter.ecogMax,
                   decoration: const InputDecoration(labelText: 'ECOG ≤'),
                   items: const <int>[0, 1, 2, 3]
-                      .map((item) => DropdownMenuItem<int>(
-                            value: item,
-                            child: Text('$item'),
-                          ))
+                      .map(
+                        (item) => DropdownMenuItem<int>(
+                          value: item,
+                          child: Text('$item'),
+                        ),
+                      )
                       .toList(growable: false),
                   onChanged: (value) {
-                    ref.read(searchFilterProvider.notifier).setFilter(
+                    ref
+                        .read(searchFilterProvider.notifier)
+                        .setFilter(
                           filter.copyWith(
                             ecogMax: value,
                             clearEcogMax: value == null,
@@ -554,10 +653,7 @@ class _FilterPanel extends ConsumerWidget {
 }
 
 class _FilterGroup extends StatelessWidget {
-  const _FilterGroup({
-    required this.title,
-    required this.children,
-  });
+  const _FilterGroup({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;

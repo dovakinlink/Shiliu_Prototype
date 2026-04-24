@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_enums.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../data/mock/mock_app_store.dart';
+import '../../../data/mock/mock_crf_templates.dart';
 import '../../../data/mock/mock_repositories.dart';
 import '../../../shared/widgets/app_filter_chip.dart';
 import '../../../shared/widgets/app_states.dart';
@@ -13,7 +15,9 @@ import '../../../shared/widgets/patient_summary_card.dart';
 import '../domain/search_models.dart';
 
 final searchFilterProvider =
-    NotifierProvider<SearchFilterNotifier, SearchFilter>(SearchFilterNotifier.new);
+    NotifierProvider<SearchFilterNotifier, SearchFilter>(
+      SearchFilterNotifier.new,
+    );
 
 final searchResultsProvider = FutureProvider<List<SearchResult>>((ref) async {
   ref.watch(mockAppStoreProvider);
@@ -24,12 +28,44 @@ final searchResultsProvider = FutureProvider<List<SearchResult>>((ref) async {
 class SearchPage extends ConsumerWidget {
   const SearchPage({super.key});
 
-  static const primarySites = <String>['肺', '胃', '食管', '乳腺', '卵巢', '结直肠', '肝', '纵隔'];
+  static const primarySites = <String>[
+    '肺',
+    '胃',
+    '食管',
+    '乳腺',
+    '卵巢',
+    '结直肠',
+    '肝',
+    '纵隔',
+  ];
   static const tumorTypes = <String>['非小细胞肺癌', '胃癌', '食管鳞癌', 'HER2 低表达乳腺癌'];
   static const stages = <String>['IIIB期', 'III期', 'IV期'];
   static const drugClasses = <String>['PD-1', 'ADC', '抗VEGF', '化疗'];
   static const comorbidities = <String>['2 型糖尿病', '高血压', 'COPD', '乙肝携带'];
   static const screeningStatuses = <String>['可初筛', '部分可初筛', '不可初筛'];
+  static const crfDemoConditions = <CRFFilterCondition>[
+    CRFFilterCondition(
+      templateId: 'gu-crf-v2026-03',
+      fieldCode: 'gu.pathology.pt',
+      label: 'pT',
+      operator: CRFFilterOperator.equals,
+      value: 'pT2',
+    ),
+    CRFFilterCondition(
+      templateId: 'gu-crf-v2026-03',
+      fieldCode: 'gu.pathology.pd_l1',
+      label: 'PD-L1',
+      operator: CRFFilterOperator.equals,
+      value: '高表达',
+    ),
+    CRFFilterCondition(
+      templateId: 'gu-crf-v2026-03',
+      fieldCode: 'gu.admission.urinary_obstruction',
+      label: '尿路梗阻程度',
+      operator: CRFFilterOperator.equals,
+      value: '中度',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,10 +84,7 @@ class SearchPage extends ConsumerWidget {
         children: <Widget>[
           Text('组合检索', style: theme.textTheme.headlineMedium),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            '多维度筛选条件构建目标队列',
-            style: theme.textTheme.bodyLarge,
-          ),
+          Text('多维度筛选条件构建目标队列', style: theme.textTheme.bodyLarge),
           const SizedBox(height: AppSpacing.sectionGap),
 
           InfoCard(
@@ -60,7 +93,11 @@ class SearchPage extends ConsumerWidget {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    Icon(Icons.tune_rounded, size: 18, color: AppPalette.primary),
+                    Icon(
+                      Icons.tune_rounded,
+                      size: 18,
+                      color: AppPalette.primary,
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     Text('筛选条件', style: theme.textTheme.titleMedium),
                   ],
@@ -74,7 +111,9 @@ class SearchPage extends ConsumerWidget {
                           label: item,
                           selected: filter.primarySite == item,
                           onSelected: (selected) {
-                            ref.read(searchFilterProvider.notifier).setFilter(
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
                                   filter.copyWith(
                                     primarySite: selected ? item : null,
                                     clearPrimarySite: !selected,
@@ -93,7 +132,9 @@ class SearchPage extends ConsumerWidget {
                           label: item,
                           selected: filter.tumorType == item,
                           onSelected: (selected) {
-                            ref.read(searchFilterProvider.notifier).setFilter(
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
                                   filter.copyWith(
                                     tumorType: selected ? item : null,
                                     clearTumorType: !selected,
@@ -105,6 +146,73 @@ class SearchPage extends ConsumerWidget {
                       .toList(growable: false),
                 ),
                 _FilterGroup(
+                  title: '瘤种包',
+                  children: enabledMockDiseaseProfiles
+                      .map(
+                        (profile) => AppFilterChip(
+                          label: '${profile.groupCode} ${profile.tumorName}',
+                          selected: filter.diseaseProfileId == profile.id,
+                          onSelected: (selected) {
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
+                                  filter.copyWith(
+                                    diseaseProfileId: selected
+                                        ? profile.id
+                                        : null,
+                                    crfTemplateId: selected
+                                        ? profile.defaultTemplateId
+                                        : null,
+                                    clearDiseaseProfile: !selected,
+                                    clearCrfTemplate: !selected,
+                                    clearCrfConditions: !selected,
+                                  ),
+                                );
+                          },
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+                _FilterGroup(
+                  title: '专病筛选',
+                  children: crfDemoConditions
+                      .map((condition) {
+                        final selected = filter.crfConditions.any(
+                          (item) =>
+                              item.fieldCode == condition.fieldCode &&
+                              item.value == condition.value,
+                        );
+                        return AppFilterChip(
+                          label: condition.displayLabel,
+                          selected: selected,
+                          onSelected: (value) {
+                            final next = value
+                                ? <CRFFilterCondition>[
+                                    ...filter.crfConditions,
+                                    condition,
+                                  ]
+                                : filter.crfConditions
+                                      .where(
+                                        (item) =>
+                                            item.fieldCode !=
+                                            condition.fieldCode,
+                                      )
+                                      .toList(growable: false);
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
+                                  filter.copyWith(
+                                    diseaseProfileId: 'gu-bladder',
+                                    crfTemplateId: condition.templateId,
+                                    crfConditions: next,
+                                  ),
+                                );
+                          },
+                        );
+                      })
+                      .toList(growable: false),
+                ),
+                _FilterGroup(
                   title: '分期',
                   children: stages
                       .map(
@@ -112,7 +220,9 @@ class SearchPage extends ConsumerWidget {
                           label: item,
                           selected: filter.stage == item,
                           onSelected: (selected) {
-                            ref.read(searchFilterProvider.notifier).setFilter(
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
                                   filter.copyWith(
                                     stage: selected ? item : null,
                                     clearStage: !selected,
@@ -131,7 +241,9 @@ class SearchPage extends ConsumerWidget {
                           label: item,
                           selected: filter.drugClass == item,
                           onSelected: (selected) {
-                            ref.read(searchFilterProvider.notifier).setFilter(
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
                                   filter.copyWith(
                                     drugClass: selected ? item : null,
                                     clearDrugClass: !selected,
@@ -150,7 +262,9 @@ class SearchPage extends ConsumerWidget {
                           label: item,
                           selected: filter.comorbidity == item,
                           onSelected: (selected) {
-                            ref.read(searchFilterProvider.notifier).setFilter(
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
                                   filter.copyWith(
                                     comorbidity: selected ? item : null,
                                     clearComorbidity: !selected,
@@ -169,9 +283,13 @@ class SearchPage extends ConsumerWidget {
                           label: item,
                           selected: filter.screeningStatusLabel == item,
                           onSelected: (selected) {
-                            ref.read(searchFilterProvider.notifier).setFilter(
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
                                   filter.copyWith(
-                                    screeningStatusLabel: selected ? item : null,
+                                    screeningStatusLabel: selected
+                                        ? item
+                                        : null,
                                     clearScreeningStatus: !selected,
                                   ),
                                 );
@@ -188,7 +306,9 @@ class SearchPage extends ConsumerWidget {
                           label: '$item 线',
                           selected: filter.lineOfTherapy == item,
                           onSelected: (selected) {
-                            ref.read(searchFilterProvider.notifier).setFilter(
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setFilter(
                                   filter.copyWith(
                                     lineOfTherapy: selected ? item : null,
                                     clearLineOfTherapy: !selected,
@@ -207,9 +327,9 @@ class SearchPage extends ConsumerWidget {
                         value: filter.hasLiverRisk ?? false,
                         title: Text('肝功异常', style: theme.textTheme.bodyMedium),
                         onChanged: (value) {
-                          ref.read(searchFilterProvider.notifier).setFilter(
-                                filter.copyWith(hasLiverRisk: value),
-                              );
+                          ref
+                              .read(searchFilterProvider.notifier)
+                              .setFilter(filter.copyWith(hasLiverRisk: value));
                         },
                       ),
                     ),
@@ -226,7 +346,9 @@ class SearchPage extends ConsumerWidget {
                             )
                             .toList(growable: false),
                         onChanged: (value) {
-                          ref.read(searchFilterProvider.notifier).setFilter(
+                          ref
+                              .read(searchFilterProvider.notifier)
+                              .setFilter(
                                 filter.copyWith(
                                   ecogMax: value,
                                   clearEcogMax: value == null,
@@ -334,10 +456,8 @@ class _SearchResultCard extends StatelessWidget {
 
 class SearchFilterNotifier extends Notifier<SearchFilter> {
   @override
-  SearchFilter build() => const SearchFilter(
-        drugClass: 'PD-1',
-        hasLiverRisk: true,
-      );
+  SearchFilter build() =>
+      const SearchFilter(drugClass: 'PD-1', hasLiverRisk: true);
 
   void setFilter(SearchFilter filter) {
     state = filter;
@@ -349,10 +469,7 @@ class SearchFilterNotifier extends Notifier<SearchFilter> {
 }
 
 class _FilterGroup extends StatelessWidget {
-  const _FilterGroup({
-    required this.title,
-    required this.children,
-  });
+  const _FilterGroup({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
@@ -368,7 +485,11 @@ class _FilterGroup extends StatelessWidget {
         children: <Widget>[
           Text(title, style: theme.textTheme.labelMedium),
           const SizedBox(height: AppSpacing.sm),
-          Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: children),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: children,
+          ),
         ],
       ),
     );
